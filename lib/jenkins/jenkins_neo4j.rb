@@ -17,6 +17,9 @@ class PipelineAggregator::JenkinsNeo4j < PipelineAggregator::Base
     neo4j_session.query("MATCH ()-[r]-() DELETE r")
     neo4j_session.query("MATCH (n) DELETE n")
   end
+  def purge_job_cache
+    # Noop
+  end
 
   def setup
     neo4j_session = get_session

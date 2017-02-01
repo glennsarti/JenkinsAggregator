@@ -40,7 +40,45 @@ class PipelineAggregator::APIGenerator::Neo4j < PipelineAggregator::APIGenerator
                     ,#{extraparams.join(',')}
                     MERGE (agg)<-[:AGGREGATE]-(b)"
           ignore = neo4j_session.query(cypher)
+
+          log("Writing build '#{project_unique_name} ##{aggregate[:number]}' response")
+          filename = get_build_filename(project_unique_name,aggregate[:number])
+          File.write(filename, JSON.pretty_generate(aggregate))
         end
+      end
+    end
+
+    # Save the responses
+    #  Root
+    log("Writing root response")
+    filename = get_root_json_filename
+    response = jenkinsapi_get_root
+    File.write(filename, response)
+
+    #  View
+    @config_data["projects"].each do |project|
+      projectname = project['name']
+      log("Writing view '#{projectname}' response")
+      filename = get_view_filename(projectname)
+      response = jenkinsapi_get_view(projectname)
+      File.write(filename, response)
+    end
+
+    #  Job + last build
+    @config_data["projects"].each do |project|
+      projectname = project['name']
+      get_branches_for_project(projectname).each do |branch|
+        project_unique_name = project["unique_name"].gsub(/##branch##/,branch)
+
+        log("Writing job '#{project_unique_name}' response")
+        filename = get_job_filename(project_unique_name)
+        response = jenkinsapi_get_job(project_unique_name)
+        File.write(filename, response)
+
+        log("Writing last build for '#{project_unique_name}' response")
+        filename = get_lastbuild_filename(project_unique_name)
+        response = jenkinsapi_get_last_build(project_unique_name)
+        File.write(filename, response)
       end
     end
 

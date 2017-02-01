@@ -14,6 +14,12 @@ helpers do
     config_data = JSON.parse(File.read(config_filename))
     return PipelineAggregator::APIGenerator::Neo4j.new(config_data)
   end
+
+  def safe_get_file(filename)
+    halt(500) unless File.exists?(filename)
+    result = File.read(filename)
+    result == '' ? halt(404) : result
+  end
 end
 
 get '/' do
@@ -21,37 +27,38 @@ get '/' do
 end
 
 get '/api/json' do
-  result = jenkins_generator.jenkinsapi_get_root
-  result == '' ? halt(404) : result
+  generator = jenkins_generator
+  safe_get_file(generator.get_root_json_filename)
 end
 
 get '/view/:viewname/api/json' do
   viewname = params[:viewname]
   puts "Getting view #{viewname}"
 
-  result = jenkins_generator.jenkinsapi_get_view(viewname)
-  result == '' ? halt(404) : result
+  generator = jenkins_generator
+  safe_get_file(generator.get_view_filename(viewname))
 end
 
 get '/job/:jobname/:buildnumber/api/json' do
   jobname = params[:jobname]
   buildnumber = params[:buildnumber]
-  result = ''
+  generator = jenkins_generator
+  filename = ''
   case buildnumber
   when 'lastBuild'
     puts "Getting latest build of job #{jobname}"
-    result = jenkins_generator.jenkinsapi_get_last_build(jobname)
+    filename = jenkins_generator.get_lastbuild_filename(jobname)
   else
     puts "Getting build #{buildnumber} of job #{jobname}"
-    result = jenkins_generator.jenkinsapi_get_build(jobname,buildnumber)
+    filename = jenkins_generator.get_build_filename(jobname,buildnumber)
   end
-  result == '' ? halt(404) : result
+  safe_get_file(filename)
 end
 
 get '/job/:jobname/api/json' do
   jobname = params[:jobname]
   puts "Getting job #{jobname}"
 
-  result = jenkins_generator.jenkinsapi_get_job(jobname)
-  result == '' ? halt(404) : result
+  generator = jenkins_generator
+  safe_get_file(generator.get_job_filename(jobname))
 end
