@@ -22,5 +22,6 @@ import
 .ruby-version
 *.lock
 vendor/
+static_api/
 
 config.json
